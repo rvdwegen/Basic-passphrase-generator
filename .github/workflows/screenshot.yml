@@ -1,0 +1,38 @@
+name: Take screenshots
+on:
+  workflow_run:
+    workflows: ["Upload to Azure Blob"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: install puppeteer-headful
+      uses: mujo-code/puppeteer-headful@master # Required for headful puppeteer
+      env:
+        CI: 'true'
+    - name: screenshots-ci-action
+      uses: flameddd/screenshots-ci-action@master
+      with:
+        noDesktop: false
+        noCommitHashFileName: true
+        waitUntil: networkidle2
+        url: https://stopassphrasegenrvdwegen.azureedge.net
+        devices: iPhone 6,iPhone 6 landscape,iPad Pro 11,iPad Pro 11 landscape
+    - name: Commit screenshots
+      id: commit
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add . --force
+        git commit -am "commit screenshots"
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      if: steps.commit.outputs.exit_code == 0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
